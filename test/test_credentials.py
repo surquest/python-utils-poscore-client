@@ -72,63 +72,47 @@ class TestCredentialsIntegration(unittest.TestCase):
         c = Credentials(self.username, self.password)
 
         # Case 1: expires_in (int)
-        c._update_tokens({
-            "accessToken": "t1",
-            "refreshToken": "r1",
-            "expires_in": 3600
-        })
+        c._update_tokens(
+            {"accessToken": "t1", "refreshToken": "r1", "expires_in": 3600}
+        )
         assert c._token == "t1"
         assert abs(c._token_expires_at - (time.time() + 3600)) < 5
 
         # Case 2: expiresIn (camelCase)
-        c._update_tokens({
-            "accessToken": "t2",
-            "refreshToken": "r2",
-            "expiresIn": 1800
-        })
+        c._update_tokens({"accessToken": "t2", "refreshToken": "r2", "expiresIn": 1800})
         assert c._token == "t2"
         assert abs(c._token_expires_at - (time.time() + 1800)) < 5
 
         # Case 3: expires_at (ISO string)
         future_dt = time.time() + 7200
         iso_str = (
-            datetime.datetime
-            .fromtimestamp(future_dt, datetime.timezone.utc)
+            datetime.datetime.fromtimestamp(future_dt, datetime.timezone.utc)
             .isoformat()
             .replace("+00:00", "Z")
         )
 
-        c._update_tokens({
-            "accessToken": "t3",
-            "refreshToken": "r3",
-            "expires_at": iso_str
-        })
+        c._update_tokens(
+            {"accessToken": "t3", "refreshToken": "r3", "expires_at": iso_str}
+        )
         assert c._token == "t3"
         assert abs(c._token_expires_at - future_dt) < 5
 
         # Case 4: expiresAt (camelCase)
-        c._update_tokens({
-            "accessToken": "t4",
-            "refreshToken": "r4",
-            "expiresAt": iso_str
-        })
+        c._update_tokens(
+            {"accessToken": "t4", "refreshToken": "r4", "expiresAt": iso_str}
+        )
         assert c._token == "t4"
         assert abs(c._token_expires_at - future_dt) < 5
 
         # Case 5: Invalid date string
-        c._update_tokens({
-            "accessToken": "t5",
-            "refreshToken": "r5",
-            "expires_at": "invalid-date"
-        })
+        c._update_tokens(
+            {"accessToken": "t5", "refreshToken": "r5", "expires_at": "invalid-date"}
+        )
         assert c._token == "t5"
         assert abs(c._token_expires_at - (time.time() + c.DEFAULT_TOKEN_TTL)) < 5
 
         # Case 6: Missing expiry
-        c._update_tokens({
-            "accessToken": "t6",
-            "refreshToken": "r6"
-        })
+        c._update_tokens({"accessToken": "t6", "refreshToken": "r6"})
         assert c._token == "t6"
         assert abs(c._token_expires_at - (time.time() + c.DEFAULT_TOKEN_TTL)) < 5
 
@@ -144,6 +128,7 @@ class TestCredentialsIntegration(unittest.TestCase):
 
     def test_network_error_during_refresh(self):
         """Test network error handling during refresh."""
+
         class BrokenSession(requests.Session):
             def post(self, *args, **kwargs):
                 raise requests.RequestException("Simulated network error")
