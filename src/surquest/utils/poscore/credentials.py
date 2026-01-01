@@ -21,7 +21,7 @@ class Credentials:
     # Constants for configuration
     DEFAULT_TIMEOUT = 15
     DEFAULT_TOKEN_TTL = 3000  # Fallback duration in seconds
-    CLOCK_SKEW = 30           # Buffer seconds to refresh before actual expiry
+    CLOCK_SKEW = 30  # Buffer seconds to refresh before actual expiry
 
     def __init__(
         self,
@@ -47,7 +47,7 @@ class Credentials:
         self.password = password
         self.base_url = base_url.rstrip("/")
         self.token_ttl_fallback = token_ttl_fallback
-        
+
         # Reuse existing session or create a new one
         self.session = session or requests.Session()
 
@@ -59,7 +59,7 @@ class Credentials:
     @property
     def bearer_token(self) -> str:
         """
-        Returns a valid bearer token. 
+        Returns a valid bearer token.
         Automatically logs in or refreshes the token if it is expired.
         """
         if not self._token:
@@ -68,7 +68,7 @@ class Credentials:
         elif self._is_expired():
             logger.info("Token expired. Refreshing...")
             self.refresh()
-            
+
         return self._token or ""
 
     @property
@@ -78,7 +78,7 @@ class Credentials:
 
     def refresh(self) -> None:
         """
-        Attempts to refresh the token. 
+        Attempts to refresh the token.
         Falls back to full authentication if the refresh fails or credentials are missing.
         """
         if not self._token or not self._refresh_token:
@@ -98,7 +98,7 @@ class Credentials:
             response = self.session.post(
                 endpoint, json={}, headers=headers, timeout=self.DEFAULT_TIMEOUT
             )
-            
+
             # If refresh fails (e.g. 401/403), the refresh token might be revoked.
             # We attempt a fresh login instead of crashing.
             if response.status_code >= 400:
@@ -138,7 +138,9 @@ class Credentials:
 
         except requests.RequestException as err:
             logger.error(f"Authentication failed: {err}")
-            raise CredentialsError(f"Login failed for user '{self.username}': {err}") from err
+            raise CredentialsError(
+                f"Login failed for user '{self.username}': {err}"
+            ) from err
 
     def _is_expired(self) -> bool:
         """Check if the token is expired or within the 'clock skew' refresh window."""
@@ -154,7 +156,7 @@ class Credentials:
 
         self._token = token
         self._refresh_token = refresh_token
-        
+
         # Calculate expiry
         expiry_ts = self._extract_expiry_timestamp(payload)
         if expiry_ts:
@@ -179,5 +181,5 @@ class Credentials:
                 return dt.timestamp()
             except ValueError:
                 logger.warning(f"Failed to parse expiry timestamp: {expires_at}")
-        
+
         return None
