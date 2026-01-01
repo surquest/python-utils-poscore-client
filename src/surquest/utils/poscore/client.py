@@ -150,14 +150,15 @@ class Client:
         response.raise_for_status()
 
         content_disposition = response.headers.get("Content-Disposition","")
+        
+        filename = "unknown"
+        
         if content_disposition:
             filename_part = content_disposition.split("filename=")
             if len(filename_part) > 1:
                 filename = filename_part[1].strip('"')
-            else:
-                filename = "unknown"
-        else:
-            filename = "unknown"
+
+            
         
         return {
             "content": response.content,

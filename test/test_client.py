@@ -81,6 +81,20 @@ class TestClientIntegration(unittest.TestCase):
             assert "id" in res[0]
             assert "name" in res[0]
 
+    def test_get_campaigns_installations(self):
+        """Test fetching campaign installations summary."""
+        creds = Credentials(self.username, self.password)
+        client = Client(creds)
+
+        # Use a known campaign ID for testing; replace with a valid one.
+        campaign_id = 6737  
+        result = client.get_campaign_installations(
+            campaign_id=campaign_id
+        )
+
+        assert isinstance(result, dict)
+        # Further assertions can be made based on expected structure of result
+
     def test_fetch_document_full_size(self):
         """Test fetching a document with full size."""
         creds = Credentials(self.username, self.password)
