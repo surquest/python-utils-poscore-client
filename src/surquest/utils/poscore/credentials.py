@@ -50,9 +50,7 @@ class Credentials:
         self.token_ttl_fallback = token_ttl_fallback
 
         # Reuse existing session or create a new one
-        self.session = session or requests.Session(
-            verify=os.getenv("VERIFY_SSL", "true").lower() != "false"
-        )
+        self.session = session or requests.Session()
 
         # Internal state
         self._token: Optional[str] = None
