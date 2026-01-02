@@ -51,7 +51,11 @@ print(installations)
 doc_id = uuid.UUID("dc85d712-dc49-4e07-bb6c-876a6aa97ec6")
 blob = client.fetch_document(document_id=doc_id, thumbnail=False)
 print(f"Downloaded {blob.file_name} ({blob.content_type})")
-# content is in document['content']
+
+# 4) Export all photos
+blob = client.export_photos(
+    campaign_id=12345
+)
 ```
 
 ## Concepts
