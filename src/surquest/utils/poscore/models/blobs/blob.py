@@ -4,7 +4,7 @@ import uuid
 
 
 class Blob(BaseModel):
-    id: uuid.UUID
+    id: str | int | uuid.UUID
     file_name: str
     content_type: str
     content: bytes

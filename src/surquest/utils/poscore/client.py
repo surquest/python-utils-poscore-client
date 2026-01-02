@@ -6,12 +6,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from .credentials import Credentials
 import uuid
-from .models import (
-    CampaignResponse,
-    Campaign,
-    InstallationStatusPayload,
-    Blob
-)
+from .models import CampaignResponse, Campaign, InstallationStatusPayload, Blob
+
 
 class Client:
     def __init__(self, credentials: Credentials) -> None:
@@ -25,6 +21,20 @@ class Client:
         # Reuse the session from credentials if available, otherwise create a new one
         self.session = self.credentials.session
 
+    @staticmethod
+    def _extract_filename(content_disposition: str) -> str:
+        """Extract filename from a Content-Disposition header value.
+
+        Returns 'unknown' when a filename cannot be determined.
+        """
+        filename = "unknown"
+        if content_disposition:
+            parts = content_disposition.split("filename=")
+            if len(parts) > 1:
+                filename = parts[1].strip().strip('"')
+
+        return filename
+    
     def get_campaigns(
         self,
         size: int = 250,
@@ -128,7 +138,7 @@ class Client:
         return installation_status
 
     def fetch_document(self, document_id: uuid.UUID, thumbnail: bool = False) -> Blob:
-        """Fetch a document by its ID via endpoint: https://pos-core.pos-media.eu/gate/api/v1/cm/documents/dc85d712-dc49-4e07-bb6c-876a6aa97ec6/thumbnail
+        """Fetch a document by its ID via endpoint: https://pos-core.pos-media.eu/gate/api/v1/cm/documents/dc85d712-dc49-4e07-bb6c-876a6aa97ec6
 
         Args:
             document_id: The UUID of the document to fetch.
@@ -149,17 +159,62 @@ class Client:
         response.raise_for_status()
 
         content_disposition = response.headers.get("Content-Disposition", "")
-
-        filename = "unknown"
-
-        if content_disposition:
-            filename_part = content_disposition.split("filename=")
-            if len(filename_part) > 1:
-                filename = filename_part[1].strip('"')
+        filename = self._extract_filename(content_disposition)
 
         return Blob(
             id=document_id,
             file_name=filename,
-            content_type=response.headers.get("Content-Type", "application/octet-stream"),
+            content_type=response.headers.get(
+                "Content-Type", "application/octet-stream"
+            ),
+            content=response.content,
+        )
+
+    def export_photos(
+        self,
+        campaign_id: int,
+        all=False,
+        locations: Optional[List[int]] = None,
+        cm_carriers: Optional[List[int]] = None,
+        components: Optional[List[int]] = None,
+        task_types: Optional[List[int]] = None,
+    ) -> Blob:
+        """
+        Export photos via the export endpoint: https://pos-core.pos-media.eu/gate/api/v1/cm/campaigns/{campaignId}/installationprogresssummary/photos
+
+        Args:
+            campaign_id: The ID of the campaign.
+            all: Whether to include all photos.
+            locations: List of locations to filter by.
+            cm_carriers: List of CM carriers to filter by.
+            components: List of components to filter by.
+            task_types: List of task types to filter by.
+
+        Returns:
+            The exported photos content as archive bytes.
+        """
+
+        endpoint = f"{self.credentials.base_url}/cm/campaigns/{campaign_id}/installationprogresssummary/photos"
+        headers = self.credentials.authorization_header
+        params = {"all": str(all).lower()}
+        payload = {
+            "locations": locations or [],
+            "cmCarriers": cm_carriers or [],
+            "components": components or [],
+            "taskTypes": task_types or [],
+        }
+        response = self.session.post(endpoint, headers=headers, params=params, json=payload)
+
+        response.raise_for_status()
+
+        content_disposition = response.headers.get("Content-Disposition", "")
+        filename = self._extract_filename(content_disposition)
+
+        return Blob(
+            id=campaign_id,
+            file_name=filename,
+            content_type=response.headers.get(
+                "Content-Type", "application/octet-stream"
+            ),
             content=response.content,
         )

@@ -104,3 +104,21 @@ class TestClientIntegration(unittest.TestCase):
         assert len(payload.content) < 15000  # Expecting a smaller thumbnail
         assert isinstance(payload.content_type, str)
         assert isinstance(payload.file_name, str)
+
+
+    def test_export_photos(self):
+        """Test exporting photos for a campaign."""
+        creds = Credentials(self.username, self.password)
+        client = Client(creds)
+
+        # Use a known campaign ID for testing; replace with a valid one.
+        campaign_id = 6695
+        blob = client.export_photos(
+            campaign_id=campaign_id,
+            all=True
+        )
+
+        assert isinstance(blob.content, bytes)
+        assert len(blob.content) > 0  # Expecting some content
+        assert isinstance(blob.content_type, str)
+        assert isinstance(blob.file_name, str)
