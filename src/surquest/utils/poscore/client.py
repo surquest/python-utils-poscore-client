@@ -6,7 +6,12 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 from .credentials import Credentials
 import uuid
-
+from .models import (
+    CampaignResponse,
+    Campaign,
+    InstallationStatusPayload,
+    Blob
+)
 
 class Client:
     def __init__(self, credentials: Credentials) -> None:
@@ -28,7 +33,7 @@ class Client:
         expand: bool = True,
         fetch_all: bool = True,
         **kwargs: Any,
-    ) -> List[Dict[str, Any]]:
+    ) -> List[Campaign]:
         """
         Retrieve a list of campaigns.
 
@@ -61,17 +66,13 @@ class Client:
             response.raise_for_status()
 
             response_data = response.json()
-            page_count = None
-            current_page = None
-            data = None
 
-            if isinstance(response_data, dict) and "data" in response_data:
-                data = response_data["data"]
-                page_count = response_data.get("pageCount")
-                current_page = response_data.get("currentPage")
+            # Convert to CampaignResponse model to leverage Pydantic parsing
+            campaign_response = CampaignResponse.model_validate(response_data)
 
-            if not data:
-                break
+            page_count = campaign_response.pageCount
+            current_page = campaign_response.currentPage
+            data = campaign_response.data
 
             campaigns.extend(data)
 
@@ -79,10 +80,8 @@ class Client:
                 break
 
             if page_count is not None and current_page is not None:
-                if current_page >= page_count - 1:
+                if current_page >= page_count:
                     break
-            elif len(data) < size:
-                break
 
             page += 1
 
@@ -95,7 +94,7 @@ class Client:
         cm_carriers: Optional[List[int]] = None,
         components: Optional[List[int]] = None,
         task_types: Optional[List[int]] = None,
-    ) -> Dict[str, Any]:
+    ) -> InstallationStatusPayload:
         """
         Fetch campaign installations progress summary.
 
@@ -122,9 +121,13 @@ class Client:
         response = self.session.post(endpoint, json=payload, headers=headers)
         response.raise_for_status()
 
-        return response.json()
+        response_data = response.json()
 
-    def fetch_document(self, document_id: uuid.UUID, thumbnail: bool = False) -> bytes:
+        installation_status = InstallationStatusPayload.model_validate(response_data)
+
+        return installation_status
+
+    def fetch_document(self, document_id: uuid.UUID, thumbnail: bool = False) -> Blob:
         """Fetch a document by its ID via endpoint: https://pos-core.pos-media.eu/gate/api/v1/cm/documents/dc85d712-dc49-4e07-bb6c-876a6aa97ec6/thumbnail
 
         Args:
@@ -154,8 +157,9 @@ class Client:
             if len(filename_part) > 1:
                 filename = filename_part[1].strip('"')
 
-        return {
-            "content": response.content,
-            "contentType": response.headers.get("Content-Type"),
-            "fileName": filename,
-        }
+        return Blob(
+            id=document_id,
+            file_name=filename,
+            content_type=response.headers.get("Content-Type", "application/octet-stream"),
+            content=response.content,
+        )

@@ -35,7 +35,7 @@ campaigns = client.get_campaigns(
     fetch_all=False # Set to True to auto-paginate through all results
 )
 for campaign in campaigns:
-    print(campaign.get("id"), campaign.get("name"))
+    print(f"Campaign: {campaign.name} with id: `{campaign.id}`
 
 # 2) Get campaign installations
 installations = client.get_campaign_installations(
@@ -49,8 +49,8 @@ print(installations)
 
 # 3) Fetch a document
 doc_id = uuid.UUID("dc85d712-dc49-4e07-bb6c-876a6aa97ec6")
-document = client.fetch_document(document_id=doc_id, thumbnail=False)
-print(f"Downloaded {document['fileName']} ({document['contentType']})")
+blob = client.fetch_document(document_id=doc_id, thumbnail=False)
+print(f"Downloaded {blob.file_name} ({blob.content_type})")
 # content is in document['content']
 ```
 
