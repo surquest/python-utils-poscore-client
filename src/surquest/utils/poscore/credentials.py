@@ -8,6 +8,7 @@ from __future__ import annotations
 import datetime as _dt
 import logging
 import time
+import os
 from typing import Any, Dict, Optional
 
 import requests
@@ -49,7 +50,9 @@ class Credentials:
         self.token_ttl_fallback = token_ttl_fallback
 
         # Reuse existing session or create a new one
-        self.session = session or requests.Session()
+        self.session = session or requests.Session(
+            verify=os.getenv("VERIFY_SSL", "true").lower() != "false"
+        )
 
         # Internal state
         self._token: Optional[str] = None
